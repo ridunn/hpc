@@ -43,14 +43,16 @@ def Compute_Non_Local_Forces(acc,pos,CORNERS,epsilon,BoxSize,DIM,N,Rcutoff,sigma
     LOWER_LEFT_INDEX = np.where((pos[:,0]<= lower_x + Rcutoff) &(pos[:,1]<= lower_y + Rcutoff))
     LOWER_RIGHT_INDEX = np.where((pos[:,0] >= upper_x - Rcutoff) &(pos[:,1]<= lower_y + Rcutoff))
     UPPER_LEFT_INDEX = np.where((pos[:,0]<= lower_x + Rcutoff) &(pos[:,1]>= upper_y - Rcutoff))
-    UPPER_RIGHT_INDEX = np.where((pos[:,0] >= upper_x + Rcutoff) &(pos[:,1]>= upper_y - Rcutoff))
+    UPPER_RIGHT_INDEX = np.where((pos[:,0] >= upper_x - Rcutoff) &(pos[:,1]>= upper_y - Rcutoff))
     INDEX = [LEFT_INDEX,RIGHT_INDEX,LOWER_INDEX,UPPER_INDEX,LOWER_LEFT_INDEX,LOWER_RIGHT_INDEX,UPPER_LEFT_INDEX,UPPER_RIGHT_INDEX]
     #print(INDEX[0])
+    #print(INDEX.shape)
     for i in range(len(CORNERS)):
         for j in range(len(CORNERS[i][0])):
             for k in range(len(CORNERS[i][1])):
                 Sjk = CORNERS[i][0][j]-CORNERS[i][1][k]
-                
+                if CORNERS[i][1][k]==[]:
+                    print(CORNERS[i][1][k])
                 for l in range(DIM):
                     if (np.abs(Sjk[l])>0.5):
                         Sjk[l] = Sjk[l]-np.copysign(1,Sjk[l])
@@ -64,7 +66,8 @@ def Compute_Non_Local_Forces(acc,pos,CORNERS,epsilon,BoxSize,DIM,N,Rcutoff,sigma
                     r6 = r2**2
                     r12 = r6**3
                     dphi = epsilon*24*r2*(2*sigma**12*r12-sigma**6*r6)
-                    acc[INDEX[i][0][j],:] = acc[INDEX[i][0][j],:]+dphi*Sjk
+                    
+                    acc[INDEX[i][0][j],:] = acc[INDEX[i][0][j],:]+dphi*Sjk 
     
     return acc
         
