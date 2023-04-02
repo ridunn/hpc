@@ -4,10 +4,9 @@ Created on Fri Mar 24 12:08:02 2023
 
 @author: Brian Hennessy
 """
+
 #Import packages
 import Send_Positions
-
-#send_positions_near_sides()
 import Compute_Forces
 import numpy as np
 import mpi4py.rc
@@ -23,15 +22,16 @@ nr_proc = comm.Get_size()
 mod = np.sqrt(nr_proc)
 
 #Create id from core rank
-y_pos = rank%mod
-x_pos = int((rank-rank%mod)/mod)
+x_pos = rank%mod
+y_pos = int((rank-rank%mod)/mod)
 
 ID = np.array([x_pos,y_pos])
+#print("My rank is {} and ID is {}".format(rank,ID))
 
 #Constants
 DIM = 2
-sigma = 0.05
-nx = 10
+sigma = 0.015
+nx = 30
 
 d_perfect = 2**(1/6)*sigma
 epsilon = 10
@@ -39,12 +39,11 @@ BoxSize = 1
 Rcutoff = 2.5*sigma
 
 #Initialize positions on cores
-x_range = np.array([ID[1]/mod,(ID[1]+1)/mod])
-y_range = np.array([ID[0]/mod,(ID[0]+1)/mod])
+x_range = np.array([ID[0]/mod,(ID[0]+1)/mod])
+y_range = np.array([ID[1]/mod,(ID[1]+1)/mod])
 
 core_dist = BoxSize/mod
 dist_init = np.linspace(0,0.8,nx)
-
 upper_x = x_range[1]
 lower_x = x_range[0]
 x_init = dist_init[np.where(upper_x > dist_init)]
@@ -62,8 +61,8 @@ for i in range(nx):
         pos[i+nx*j] = [x_init[i]*BoxSize,y_init[j]*BoxSize]
 
 #print(len(pos))
-Nsteps = 10000
-dt = 1/10000
+Nsteps = 40
+dt = 1/1000
 #print(len(pos))
 def update_core_pos(pos,vel,acc):
     all_pos = comm.gather(pos,root=0)
@@ -89,7 +88,7 @@ def main(pos,Nsteps,dt,epsilon,BoxSize,DIM):
     ims = []
     vel = (np.zeros([N,DIM]))
     acc = (np.zeros([N,DIM]))
-    fig = plt.figure(figsize = (4,4), dpi=150)
+   # fig = plt.figure(figsize = (4,4), dpi=150)
 
     E = np.zeros(Nsteps+1)
     ax = plt.axes()
@@ -109,7 +108,6 @@ def main(pos,Nsteps,dt,epsilon,BoxSize,DIM):
         
         all_core_pos = comm.gather(pos,root=0)
         if rank == 0: 
-            
             all_core_pos = np.concatenate(all_core_pos)
             img = ax.scatter(all_core_pos[:,0],all_core_pos[:,1],color='b')
             ims.append([img])
@@ -122,11 +120,13 @@ def main(pos,Nsteps,dt,epsilon,BoxSize,DIM):
         
     #ims = comm.bcast(ims,root=0)
     if rank ==0:
-        
+        pass
         plt.title("Molecular Dynamics")
+        plt.xlim([0,1])
+        plt.ylim([0,1])
         #plt.rcParams["animation.html"]= 'html5'
-        ani = animation.ArtistAnimation(fig,ims,interval = 40,blit=True)
-        ani.save("Test_ani_2.mp4")
+        #ani = animation.ArtistAnimation(fig,ims,interval = 40,blit=True)
+        #ani.save("900_particles.mp4")
     return acc,E
 
 a = main(pos,Nsteps,dt,epsilon,BoxSize,DIM)
@@ -154,9 +154,9 @@ else:
 
 
 if rank ==1: 
-    fig2 = plt.figure(figsize = (4,4), dpi=150)
-    plt.plot(Ene.sum(axis=0)/100)
-    plt.savefig("Test.png")
+    fig2 = plt.figure(figsize = (8,4), dpi=150)
+    plt.plot(Ene.sum(axis=0)/nx**2)
+    plt.savefig("Energy_78.png")
     plt.close()
 else:
     pass

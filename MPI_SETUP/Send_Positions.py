@@ -8,7 +8,7 @@ import numpy as np
 def send_positions_near_sides(comm,pos,ID,x_range,y_range,Rcutoff,mod):
 
     def rank_from_ID(ID):
-        return int(mod*ID[0]+ID[1])
+        return int(mod*ID[1]+ID[0])
     
     upper_x = x_range[1]
     lower_x = x_range[0]
@@ -16,21 +16,20 @@ def send_positions_near_sides(comm,pos,ID,x_range,y_range,Rcutoff,mod):
     lower_y = y_range[0]
     #Left wall
     LEFT = pos[np.where(pos[:,0]<= lower_x + Rcutoff)]
-    comm.send(LEFT,dest=rank_from_ID((ID[0],(ID[1]-1)%mod)),tag=1)
+    comm.isend(LEFT,dest=rank_from_ID(((ID[0]-1)%mod,ID[1])),tag=1)
     #FROM_RIGHT = comm.recv(LEFT,source=rank_from_ID((ID[0],(ID[1]-1)%mod)),tag=1)
     
-
     #Right wall
     RIGHT = pos[np.where(pos[:,0]>= upper_x - Rcutoff)]
-    comm.isend(RIGHT,dest=rank_from_ID((ID[0],(ID[1]+1)%mod)),tag=2)
+    comm.isend(RIGHT,dest=rank_from_ID(((ID[0]+1)%mod,ID[1])),tag=2)
 
     #Lower wall
     LOWER = pos[np.where(pos[:,1] <= lower_y + Rcutoff)]
-    comm.isend(LOWER,dest=rank_from_ID(((ID[0]-1)%mod,ID[1])),tag=3)
+    comm.isend(LOWER,dest=rank_from_ID((ID[0],(ID[1]-1)%mod)),tag=3)
               
     #Upper wall
     UPPER = pos[np.where(pos[:,1] >= upper_y - Rcutoff)]
-    comm.isend(UPPER,dest=rank_from_ID(((ID[0]+1)%mod,ID[1])),tag=4)
+    comm.isend(UPPER,dest=rank_from_ID((ID[0],(ID[1]+1)%mod)),tag=4)
     
     #Lower left corner
     LOWER_LEFT = LEFT[np.where(LEFT[:,1]<= lower_y + Rcutoff)]
@@ -50,13 +49,15 @@ def send_positions_near_sides(comm,pos,ID,x_range,y_range,Rcutoff,mod):
     #req.wait()
 
     
-    FROM_LEFT = comm.recv(source=rank_from_ID((ID[0],(ID[1]-1)%mod)),tag=2)
+    FROM_LEFT = comm.recv(source=rank_from_ID(((ID[0]-1)%mod,ID[1])),tag=2)
     
-    FROM_RIGHT = comm.recv(source=rank_from_ID((ID[0],(ID[1]+1)%mod)),tag=1)
-    FROM_LOWER = comm.recv(source=rank_from_ID(((ID[0]-1)%mod,ID[1])),tag=4)
-    FROM_UPPER = comm.recv(source=rank_from_ID(((ID[0]+1)%mod,ID[1])),tag=3)
+    FROM_RIGHT = comm.recv(source=rank_from_ID(((ID[0]+1)%mod,ID[1])),tag=1)
+    FROM_LOWER = comm.recv(source=rank_from_ID((ID[0],(ID[1]-1)%mod)),tag=4)
+    FROM_UPPER = comm.recv(source=rank_from_ID((ID[0],(ID[1]+1)%mod)),tag=3)
     FROM_LOWER_LEFT = comm.recv(source=rank_from_ID(((ID[0]-1)%mod,(ID[1]-1)%mod)),tag=8)
+    
     FROM_UPPER_LEFT = comm.recv(source=rank_from_ID(((ID[0]-1)%mod,(ID[1]+1)%mod)),tag=7)
+    
     FROM_LOWER_RIGHT = comm.recv(source=rank_from_ID(((ID[0]+1)%mod,(ID[1]-1)%mod)),tag=6)
     FROM_UPPER_RIGHT = comm.recv(source=rank_from_ID(((ID[0]+1)%mod,(ID[1]+1)%mod)),tag=5)
                            
