@@ -13,7 +13,7 @@ import mpi4py.rc
 mpi4py.rc.initialize = False  
 from mpi4py import MPI
 import matplotlib.pyplot as plt
-#from matplotlib.animation import PillowWriter
+
 from matplotlib import animation
 MPI.Init()
 comm = MPI.COMM_WORLD
@@ -30,20 +30,21 @@ ID = np.array([x_pos,y_pos])
 
 #Constants
 DIM = 2
-sigma = 0.015
-nx = 30
-
+sigma = 0.06
+nx = 15
+N_particles = nx**2
+np.random.seed(0)
 d_perfect = 2**(1/6)*sigma
 epsilon = 10
 BoxSize = 1
-Rcutoff = 2.5*sigma
+Rcutoff = 3*sigma
 
 #Initialize positions on cores
 x_range = np.array([ID[0]/mod,(ID[0]+1)/mod])
 y_range = np.array([ID[1]/mod,(ID[1]+1)/mod])
 
 core_dist = BoxSize/mod
-dist_init = np.linspace(0,0.8,nx)
+dist_init = np.linspace(0,0.9,nx)
 upper_x = x_range[1]
 lower_x = x_range[0]
 x_init = dist_init[np.where(upper_x > dist_init)]
@@ -58,11 +59,11 @@ N = nx*ny
 pos = np.zeros([nx*ny,DIM])
 for i in range(nx):
     for j in range(ny):
-        pos[i+nx*j] = [x_init[i]*BoxSize,y_init[j]*BoxSize]
+        pos[i+nx*j] = [x_init[i]*BoxSize,y_init[j]*BoxSize]#+0.001*np.random.normal(0,1,size=2)
 
 #print(len(pos))
-Nsteps = 40
-dt = 1/1000
+Nsteps = 10
+dt = 1/2000
 #print(len(pos))
 def update_core_pos(pos,vel,acc):
     all_pos = comm.gather(pos,root=0)
@@ -83,34 +84,78 @@ def update_core_pos(pos,vel,acc):
     acc = acc_x[np.where((pos_x[:,1]>=lower_y)&(pos_x[:,1]<=upper_y))]
     return pos,vel,acc
 
+
+def rank_from_ID(ID):
+    return int(mod*ID[1]+ID[0])
+
+def update_core_pos_2(pos,vel,acc):
+    pos_2 = pos
+    vel_2 = vel
+    acc_2 = acc
+    INDEX = np.where(np.any([pos[:,0]<lower_x,pos[:,0]>upper_x,pos[:,1]<lower_y,pos[:,1]>upper_y]))
+    pos_left = pos[INDEX]
+    vel_left = vel[INDEX]
+    acc_left = acc[INDEX]
+    np.delete(pos,INDEX)
+    np.delete(vel,INDEX)
+    np.delete(acc,INDEX)
+    pos_dict = {(i,j): [] for j in range(int(mod)) for i in range(int(mod))}
+    for i in range(len(pos_left)):
+        x,y = np.floor(pos_left[i][0]/mod),np.floor(pos_left[i][1]/mod)
+        if (x,y) in pos_dict.keys():
+            pos_dict[(x,y)].append([pos_left[i],vel_left[i],acc_left[i]])
+        else:
+            pos_dict[(x,y)] = [pos_left[i]]
+    for l in pos_dict.keys():
+        comm.isend(pos_dict[l],dest = rank_from_ID(l),tag = rank_from_ID(l))
+        #comm.isend(pos_dict[1],dest = rank_from_ID(l),tag = rank_from_ID[l]+)
+        #comm.isend(pos_dict[2],dest = rank_from_ID(l),tag = rank_from_ID[l])
+    
+    for h in pos_dict.keys():
+        pos_new = comm.recv(source=rank_from_ID(h),tag=rank_from_ID(h))
+        print(pos_new)
+        if pos_new != []:
+            np.concatenate(pos,pos_new[0])
+            np.concatenate(vel,pos_new[1])
+            np.concatenate(acc,pos_new[2])
+    
+    print(pos,acc,vel == update_core_pos(pos_2,vel_2,acc_2))
+    return pos,vel,acc
+    #omm.isend(LOWER,dest=rank_from_ID((ID[0],(ID[1]-1)%mod)),tag=3)
+                   
+    
 def main(pos,Nsteps,dt,epsilon,BoxSize,DIM):
     N = len(pos)
     ims = []
     vel = (np.zeros([N,DIM]))
     acc = (np.zeros([N,DIM]))
-   # fig = plt.figure(figsize = (4,4), dpi=150)
+    fig = plt.figure(figsize = (4,4), dpi=250)
 
     E = np.zeros(Nsteps+1)
     ax = plt.axes()
     E[0] = sum([sum(vel[i,:]**2) for i in range(N)])
     for k in range(Nsteps):
-        pos = (pos + dt*vel + 0.5*dt**2*acc)
+        
         #print(update_core_pos(pos))
         vel = vel +1/2*dt*acc
         acc = Compute_Forces.Compute_Local_Forces(pos, epsilon, BoxSize, DIM, N, Rcutoff, sigma)
         CORNERS = Send_Positions.send_positions_near_sides(comm, pos, ID, x_range, y_range, Rcutoff, mod)
         acc = Compute_Forces.Compute_Non_Local_Forces(acc,pos,CORNERS,epsilon,BoxSize,DIM,N,Rcutoff,sigma,x_range,y_range,ID)
         vel = vel + 1/2*dt*acc
+        
+        pos = (pos + dt*vel + 0.5*dt**2*acc)
         pos = pos%BoxSize
-        pos_val = update_core_pos(pos,vel,acc)
+        print(update_core_pos_2(pos,vel,acc) == update_core_pos(pos,vel,acc))
+        pos_val = update_core_pos_2(pos,vel,acc)
         
         pos = pos_val[0]
         
         all_core_pos = comm.gather(pos,root=0)
         if rank == 0: 
             all_core_pos = np.concatenate(all_core_pos)
-            img = ax.scatter(all_core_pos[:,0],all_core_pos[:,1],color='b')
-            ims.append([img])
+            img = ax.scatter(all_core_pos[:,0],all_core_pos[:,1],color='b',linewidth=7)
+            title = ax.text(0.15*BoxSize,1.05*BoxSize,"N = {} sigma = {} t = {}".format(N_particles,sigma,'%s' % float(str('%s' % float('%.2g' % float(k*dt)))[:4])))
+            ims.append([img,title])
         vel = pos_val[1]
        
         #print(pos[0][0])
@@ -121,12 +166,12 @@ def main(pos,Nsteps,dt,epsilon,BoxSize,DIM):
     #ims = comm.bcast(ims,root=0)
     if rank ==0:
         pass
-        plt.title("Molecular Dynamics")
+       # plt.title("N = {} sigma = {}".format(N_particles,sigma))
         plt.xlim([0,1])
         plt.ylim([0,1])
-        #plt.rcParams["animation.html"]= 'html5'
+        plt.rcParams["animation.html"]= 'html5'
         #ani = animation.ArtistAnimation(fig,ims,interval = 40,blit=True)
-        #ani.save("900_particles.mp4")
+        #ani.save("Test_ANIS/{}_test_new_update.mp4".format(N_particles))
     return acc,E
 
 a = main(pos,Nsteps,dt,epsilon,BoxSize,DIM)
@@ -156,7 +201,7 @@ else:
 if rank ==1: 
     fig2 = plt.figure(figsize = (8,4), dpi=150)
     plt.plot(Ene.sum(axis=0)/nx**2)
-    plt.savefig("Energy_78.png")
+    #plt.savefig("Test_ANIS/{}_ENERGY_Test_sigma_smaller_symmetry_larger_dt_random_larger_cutoff.png".format(N_particles))
     plt.close()
 else:
     pass
