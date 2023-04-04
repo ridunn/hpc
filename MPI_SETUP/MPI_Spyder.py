@@ -55,7 +55,7 @@ np.random.seed(0)
 d_perfect = 2**(1/6)*sigma
 epsilon = 10
 BoxSize = 1
-Rcutoff = 3*sigma
+Rcutoff = 2.5*sigma
 
 #Initialize positions on cores
 x_range = np.array([ID[0]/mod_x,(ID[0]+1)/mod_x])
