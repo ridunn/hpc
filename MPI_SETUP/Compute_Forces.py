@@ -12,19 +12,15 @@ def Compute_Local_Forces(pos,epsilon,BoxSize,DIM,N,Rcutoff,sigma):
     for i in range(N-1):
         for j in range(i+1,N):
             Sij = (pos[i,:]-pos[j,:])
-            
             for l in range(DIM):
                 if (np.abs(Sij[l])>0.5):
                     Sij[l] = Sij[l]-np.copysign(1,Sij[l])
-            
             Rij = BoxSize*Sij
-            
             Rsqij = np.dot(Rij,Rij)
-            
             if (Rsqij<Rcutoff**2):
                 r2 = 1/Rsqij
-                r6 = r2**2
-                r12 = r6**3
+                r6 = r2**3
+                r12 = r6**2
                 dphi = epsilon*24*r2*(2*sigma**12*r12-sigma**6*r6)
                 
                 acc[i,:] = acc[i,:]+dphi*Sij
@@ -51,8 +47,7 @@ def Compute_Non_Local_Forces(acc,pos,CORNERS,epsilon,BoxSize,DIM,N,Rcutoff,sigma
         for j in range(len(CORNERS[i][0])):
             for k in range(len(CORNERS[i][1])):
                 Sjk = CORNERS[i][0][j]-CORNERS[i][1][k]
-                if CORNERS[i][1][k]==[]:
-                    print(CORNERS[i][1][k])
+            
                 for l in range(DIM):
                     if (np.abs(Sjk[l])>0.5):
                         Sjk[l] = Sjk[l]-np.copysign(1,Sjk[l])
@@ -63,8 +58,8 @@ def Compute_Non_Local_Forces(acc,pos,CORNERS,epsilon,BoxSize,DIM,N,Rcutoff,sigma
                 
                 if (Rsqjk<Rcutoff**2):
                     r2 = 1/Rsqjk
-                    r6 = r2**2
-                    r12 = r6**3
+                    r6 = r2**3
+                    r12 = r6**2
                     dphi = epsilon*24*r2*(2*sigma**12*r12-sigma**6*r6)
                     
                     acc[INDEX[i][0][j],:] = acc[INDEX[i][0][j],:]+dphi*Sjk 
