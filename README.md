@@ -18,3 +18,4 @@ The benchmarks.py file just produces outputs based on the benchmarks obtained in
 
 ## Parallel Lattice Model
 
+Notice that to run you first need to run precompute.py to make the local file of pre computed forces and them you can move on to running Lattice_Spyder_MPI.py, this is run the same way as the Parallel Full model.
