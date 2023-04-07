@@ -14,4 +14,3 @@ The full parallel code used is contained in the folder Parallel_Code. How to run
 
 ## Parallel Lattice Model
 
-## Video Rendering
