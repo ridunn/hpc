@@ -6,7 +6,7 @@ Molecular dynamics models use the Lennard-Jones potential, and use Verlet integr
 
 ## Serial Code
 
-The serial code is contained in the notebook Molecules_better.ipynb, where we will indicate where variables can be updated.
+The serial code is contained in the notebook Serial_Code.ipynb. This produces an animation and plots of the kinetic, potential and total energy.
 
 ## Parallel Full Model
 
