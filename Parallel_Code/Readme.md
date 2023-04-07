@@ -6,11 +6,11 @@ The MPI_Spyder.py and MPI_Spyder_Benchmarking.py files are very similar, execpt 
 
 To launch using MPI, run the following command in a terminal.
 
-mpiexec -n (number of cores) python MPI_Spyder.py 
+mpiexec -n python MPI_Spyder.py 
 
-to run the code that generates the mp4 file and
+This will launch the code that generates the mp4 file, where n denotes the number of cores(prime numbers don't work). 
 
-mpiexec -n (number of cores) python MPI_Spyder_Benchmarking.py 
+mpiexec -n python MPI_Spyder_Benchmarking.py 
 
 to run the benchmarking file.
 
