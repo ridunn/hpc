@@ -12,5 +12,9 @@ The serial code is contained in the notebook Serial_Code.ipynb. This produces an
 
 The full parallel code used is contained in the folder Parallel_Code. How to run this code is explained in that folder.
 
+## Benchmarks
+
+The benchmarks.py file just produces outputs based on the benchmarks obtained in the parallel full model. The output is 5 plots.
+
 ## Parallel Lattice Model
 
