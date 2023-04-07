@@ -10,12 +10,16 @@ The serial code is contained in the notebook Serial_Code.ipynb. This produces an
 
 ## Parallel Full Model
 
-The full parallel code used is contained in the folder Parallel_Code. How to run this code is explained in that folder.
+The full parallel code used is contained in the folder Parallel_Code. Instructions to run this code are contained in the folder.
 
 ## Benchmarks
 
-The benchmarks.py file just produces outputs based on the benchmarks obtained in the parallel full model. The output is 5 plots.
+The benchmarks.py file just produces outputs based on the benchmarks obtained in the parallel full model. The output is five plots.
 
 ## Parallel Lattice Model
 
-Notice that to run you first need to run precompute.py to make the local file of pre computed forces and them you can move on to running Lattice_Spyder_MPI.py, this is run the same way as the Parallel Full model.
+The parallel lattice model is comtained in the Lattice Method folder.
+
+You must first run precompute.py to make the local file of pre-computed forces.
+
+Them run Lattice_Spyder_MPI.py, following the same steps as used to run the Parallel Full model.
